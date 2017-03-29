@@ -17,6 +17,7 @@ module.exports = {
     "react"
   ],
   "rules": {
+    "no-unused-vars": "error",
     "accessor-pairs": "error",
     "array-bracket-spacing": [
       "error",
@@ -59,7 +60,7 @@ module.exports = {
     ],
     "consistent-return": "off",
     "consistent-this": "error",
-    "curly": "error",
+    "curly": ["error", "multi-line"],
     "default-case": "error",
     "dot-location": [
       "error",
@@ -153,7 +154,7 @@ module.exports = {
     "no-nested-ternary": "error",
     "no-new": "error",
     "no-new-func": "error",
-    "no-new-object": "error",
+    // "no-new-object": "error",
     "no-new-require": "error",
     "no-new-wrappers": "error",
     "no-octal-escape": "error",
@@ -236,13 +237,13 @@ module.exports = {
     "semi": "error",
     "semi-spacing": "error",
     "sort-imports": "off",
-    "sort-vars": "error",
+    "sort-vars": "off",
     "space-before-blocks": "error",
     "space-before-function-paren": "off",
-    "space-in-parens": [
-      "error",
-      "never"
-    ],
+    // "space-in-parens": "false"[
+    //   "error",
+    //   "never"
+    // ],
     "space-infix-ops": "error",
     "space-unary-ops": "error",
     "spaced-comment": [

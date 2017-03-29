@@ -19,3 +19,20 @@
     text-align: left;
   }
 }
+
+.links line {
+  stroke: #999;
+  stroke-opacity: 0.6;
+}
+
+.nodes circle {
+  stroke: #fff;
+  cursor: crosshair;
+  stroke-width: 1.5px;
+}
+
+.nodes text {
+  cursor: crosshair;
+  font: 10px sans-serif;
+}
+
