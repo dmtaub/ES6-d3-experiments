@@ -77,73 +77,112 @@ export class App {
     }
 
     this.grouped = grouped;
-    let index = 0;
-    for (type of grouped) {
-      type.params = type.fingerprint.split(':');
-      index++;
-      type.label = `Type${index}`;
-    }
 
     // for debugging
     window.app = this;
-
     let param = null;
     const fields = {};
     const graph = {nodes: [], links: []};
     window.app.graph = graph;
     window.app.fields = fields;
 
-
-    // initial pass to create type nodes and collect stats
+    // initial pass to create and add type nodes, create param nodes, and collect stats
+    let index = 0;
     for (type of grouped) {
-      graph.nodes.push({'id': type.label, 'group': 1});
+      index++;
+      type.id = `Type${index}`;
+      type.radius = 8;
+      type.group = 2; // for display color
+      type.params = type.fingerprint.split(':');
+      if (type.count === 1723) type.isNote = true;
+      graph.nodes.push(type);
+
       for (param of type.params) {
         // collect parameters and counts for each
         if (!fields[param]) {
-          fields[param] = 1;
+          fields[param] = {
+            'count': 1, // starting value
+            'types': [type.id],
+            'group': 1,
+            'radius': 4,
+            'displayName': false,
+            'id': param
+          };
         } else {
-          fields[param]++;
+          fields[param].count++;
+          fields[param].types.push(type.id); // save all types that connect
         }
       }
     }
 
-    const nodeSet = new Set();
-    // add links if param has > 1 references
-    for (type of grouped) {
-      for (param of type.params) {
-        if (fields[param] > 1) {
-          graph.links.push({
-            'source': param,
-            'target': type.label,
-            'value': 1
-          });
-          // add node for param when it meets condition
-          if (!nodeSet.has(param)) {
-            graph.nodes.push({'id': param, 'group': 2});
-            nodeSet.add(param);
+    let type2 = null,
+      key = '';
+    const pairs = {};
+    let i = 0,
+      j = 0;
+
+    for (param of Object.values(fields)) {
+      for (i = 0; i < param.types.length; i++) {
+        for (j = i + 1; j < param.types.length; j++) {
+          type = param.types[i];
+          type2 = param.types[j];
+          if (type !== type2) {
+            key = [type, type2].sort().join(); // join with comma
+            pairs[key] = pairs[key] ? pairs[key] + 1 : 1;
           }
         }
       }
     }
 
-    /*     'nodes': [
-        {'id': 'Myriel', 'group': 1},
-        {'id': 'Napoleon', 'group': 1},
-        {'id': 'Mlle.Baptistine', 'group': 2}
-      ],
-      'links': [
-        {'source': 'Napoleon', 'target': 'Myriel', 'value': 1},
-        {'source': 'Mlle.Baptistine', 'target': 'Myriel', 'value': 8}
-      ]
-    };
+    window.pairs = pairs;
+
+    for (key in pairs) {
+      if (key[0] === 'T') {
+        [type, type2] = key.split(',');
+        graph.links.push({
+          'source': type,
+          'target': type2,
+          'value': pairs[key]
+        });
+      }
+    }
+
+    /*
+    const nodeSet = new Set();
+    // second pass to decide which links to add
+    // add link if param has > 1 references
+    for (type of grouped) {
+      for (param of type.params) {
+        if (fields[param].count > 1) {
+          graph.links.push({
+            'source': param,
+            'target': type.id,
+            'value': 1
+          });
+          // add node for param when it meets condition
+          if (!nodeSet.has(param)) {
+            nodeSet.add(fields[param]);
+          }
+        }
+      }
+    }
+
+    // add all nodes that we found above
+    nodeSet.forEach( item => graph.nodes.push(item) );
     */
+
+    // if all param nodes know their linked types, we can iterate
+    // over them to count co-occurance
+    // we can then connect the type nodes by these weights
+    // TODO: Consider sizing nodes by number of records
+
     this.createChart(graph);
   }
 
   render() {
     const body = `<svg class=${styles.svg1}></svg>`;
 
-    const caption = '<p>Analysis Complete</p>';
+    const caption = 'GDR View Similarity';
     const div = document.createElement('div');
 
     div.innerHTML = `${caption}${body}`;
@@ -239,7 +278,7 @@ export class App {
             .on('end', this.dragended.bind(this)));
 
     this.node.append('circle')
-        .attr('r', 5)
+        .attr('r', d => d.radius)
         .attr('fill', d => color(d.group));
 
 
@@ -249,7 +288,7 @@ export class App {
     this.node.append('text')
           .attr('dx', 6)
           .attr('dy', '.35em')
-          .text((d) => d.group === 1 ? d.id : '');
+          .text((d) => d.displayName ? d.id : '');
 
     this.simulation
         .nodes(graph.nodes)
