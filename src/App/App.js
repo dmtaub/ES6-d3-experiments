@@ -5,9 +5,6 @@ window.d3 = d3; // for testing
 const groupedURL = require('file-loader!./GroupedViews.csv');
 const countsURL = require('file-loader!./ViewCounts.csv');
 
-const width = 960;
-const height = 600;
-
 export class App {
 
   constructor(dom, options) {
@@ -80,15 +77,39 @@ export class App {
     }
 
     this.grouped = grouped;
+    let index = 0;
     for (type of grouped) {
       type.params = type.fingerprint.split(':');
+      index++;
+      type.label = `Type${index}`;
     }
 
     // for debugging
     window.app = this;
 
-    const graph = {
-      'nodes': [
+    let param = null;
+    const fields = new Set();
+    const graph = {nodes: [], links: []};
+    window.app.graph = graph;
+    window.app.fields = fields;
+
+    for (type of grouped) {
+      graph.nodes.push({'id': type.label, 'group': 1});
+      for (param of type.params) {
+        // could be optimized
+        if (!fields.has(param)) {
+          graph.nodes.push({'id': param, 'group': 2});
+          fields.add(param);
+        }
+        graph.links.push({
+          'source': param,
+          'target': type.label,
+          'value': 1
+        });
+      }
+    }
+
+    /*     'nodes': [
         {'id': 'Myriel', 'group': 1},
         {'id': 'Napoleon', 'group': 1},
         {'id': 'Mlle.Baptistine', 'group': 2}
@@ -98,11 +119,12 @@ export class App {
         {'source': 'Mlle.Baptistine', 'target': 'Myriel', 'value': 8}
       ]
     };
+    */
     this.createChart(graph);
   }
 
   render() {
-    const body = `<svg width="${width}" height="${height}"></svg>`;
+    const body = `<svg class=${styles.svg1}></svg>`;
 
     const caption = '<p>Analysis Complete</p>';
     const div = document.createElement('div');
@@ -162,8 +184,20 @@ export class App {
       ]
     };
    */
+
+
   createChart(graph) {
-    const svg = d3.select('svg');
+    const svg = d3.select('svg'),
+      svgel = svg.node(),
+      width = svgel.clientWidth,
+      height = svgel.clientHeight;
+
+    const view = svg.append('g').attr('class', 'viewport');
+
+    svg.call(d3.zoom().scaleExtent([1 / 4, 4])
+        .on('zoom', () => {
+          view.attr('transform', d3.event.transform);
+        }));
 
     const color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -172,14 +206,14 @@ export class App {
       .force('charge', d3.forceManyBody())
       .force('center', d3.forceCenter(width / 2, height / 2));
 
-    this.link = svg.append('g')
+    this.link = view.append('g')
       .attr('class', styles.links)
       .selectAll('line')
       .data(graph.links)
       .enter().append('line')
       .attr('stroke-width', d => Math.sqrt(d.value));
 
-    this.node = svg.append('g').attr('class', styles.nodes)
+    this.node = view.append('g').attr('class', styles.nodes)
       .selectAll('.node')
       .data(graph.nodes)
       .enter().append('g').attr('class', 'node').call(d3.drag()
@@ -198,7 +232,7 @@ export class App {
     this.node.append('text')
           .attr('dx', 6)
           .attr('dy', '.35em')
-          .text((d) => d.id);
+          .text((d) => d.group === 1 ? d.id : '');
 
     this.simulation
         .nodes(graph.nodes)
