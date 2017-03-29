@@ -88,24 +88,41 @@ export class App {
     window.app = this;
 
     let param = null;
-    const fields = new Set();
+    const fields = {};
     const graph = {nodes: [], links: []};
     window.app.graph = graph;
     window.app.fields = fields;
 
+
+    // initial pass to create type nodes and collect stats
     for (type of grouped) {
       graph.nodes.push({'id': type.label, 'group': 1});
       for (param of type.params) {
-        // could be optimized
-        if (!fields.has(param)) {
-          graph.nodes.push({'id': param, 'group': 2});
-          fields.add(param);
+        // collect parameters and counts for each
+        if (!fields[param]) {
+          fields[param] = 1;
+        } else {
+          fields[param]++;
         }
-        graph.links.push({
-          'source': param,
-          'target': type.label,
-          'value': 1
-        });
+      }
+    }
+
+    const nodeSet = new Set();
+    // add links if param has > 1 references
+    for (type of grouped) {
+      for (param of type.params) {
+        if (fields[param] > 1) {
+          graph.links.push({
+            'source': param,
+            'target': type.label,
+            'value': 1
+          });
+          // add node for param when it meets condition
+          if (!nodeSet.has(param)) {
+            graph.nodes.push({'id': param, 'group': 2});
+            nodeSet.add(param);
+          }
+        }
       }
     }
 
