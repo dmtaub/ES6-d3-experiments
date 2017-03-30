@@ -186,10 +186,11 @@ export class App {
   render() {
     const body = `<svg class=${styles.svg1}></svg>`;
 
-    const caption = 'GDR View Similarity';
+    document.getElementById('title').innerText += ': GDR View Similarity';
+    document.getElementById('description').innerText = 'Circle Size represents number of views on a log scale. Links show similarity between types of views';
     const div = document.createElement('div');
 
-    div.innerHTML = `${caption}${body}`;
+    div.innerHTML = `${body}`;
     div.classList.add(styles.table);
 
     this.dom.innerHTML = '';
@@ -213,7 +214,7 @@ export class App {
   clickNode(d) {
     const el = document.getElementById('hovering');
     el.classList.add(styles.hovering);
-    console.log(d);
+    // console.log(d);
     this.node
       .select('circle')
       .style('fill', dd => dd.id === d.id ? 'red' : color(d.group));
@@ -225,6 +226,12 @@ export class App {
       [name, type] = param.split('-');
       el.innerHTML += `<span class="${styles.paramName}">${name}</span>${type}<br>`;
     });
+
+    // debug, output all matching views
+    console.log(`This type has ${d.count} views, click again to print them to console.`);
+    if (this.lastClick === d.id) d.views.forEach((v) => console.log(v));
+    this.lastClick = d.id;
+
   }
 
   dragstarted(d) {
