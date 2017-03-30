@@ -6,6 +6,8 @@ const maxRadius = 2;
 const groupedURL = require('file-loader!./GroupedViews.csv');
 const countsURL = require('file-loader!./ViewCounts.csv');
 
+const paramIgnoreList = ['PATID-NUMBER-disabled'];
+
 const color = d3.scaleOrdinal(d3.schemeCategory20);
 
 
@@ -74,9 +76,9 @@ export class App {
         this.counted[entry.viewname] = +entry.rowcount.replace(/,/g, '');
       }
 
-      // output 0 NaN etc...
+      // // output 0 NaN etc...
       // if (!this.counted[entry.viewname]) {
-      //  console.log(entry.rowcount);
+      //   console.log(`<<${entry.rowcount}>> = ${this.counted[entry.viewname]}`);
       // }
     }
 
@@ -99,6 +101,18 @@ export class App {
       type.group = 2; // for display color
       type.params = type.fingerprint.split(':');
       if (type.count === 1723) type.isNote = true;
+      type.recordCount = 0;
+
+      for (param of type.views) {
+        // get total record count for type, by adding each view's count
+        if (typeof this.counted[param] === 'undefined') {
+          console.log(`No row count for view - ${param}`);
+        } else {
+          type.recordCount += this.counted[param];
+        }
+      }
+      console.log(`${type.id}: ${type.recordCount} records`);
+
       graph.nodes.push(type);
 
       for (param of type.params) {
@@ -125,7 +139,8 @@ export class App {
     let i = 0,
       j = 0;
 
-    for (param of Object.values(fields)) {
+
+    const loopOverPairs = function(param) {
       for (i = 0; i < param.types.length; i++) {
         for (j = i + 1; j < param.types.length; j++) {
           type = param.types[i];
@@ -136,10 +151,19 @@ export class App {
           }
         }
       }
+    };
+
+    // if all param nodes know their linked types, we can iterate
+    // over them to count co-occurance
+    for (param of Object.values(fields)) {
+      if (paramIgnoreList.indexOf(param.id) === -1) {
+        loopOverPairs(param);
+      }
     }
 
     window.pairs = pairs;
 
+    // we then connect the type nodes by these weights
     for (key in pairs) {
       if (key[0] === 'T') {
         [type, type2] = key.split(',');
@@ -175,12 +199,26 @@ export class App {
     nodeSet.forEach( item => graph.nodes.push(item) );
     */
 
-    // if all param nodes know their linked types, we can iterate
-    // over them to count co-occurance
-    // we can then connect the type nodes by these weights
-    // TODO: Consider sizing nodes by number of records
+
+    // TODO: Further condense paired sets of FOO and A_FOO
+    // TODO: Ranked column names and checkboxes
 
     this.createChart(graph);
+  }
+
+  setCircleNumViews() {
+    document.getElementById('description').innerText = 'Circle Size represents number of views on a log scale. Links show similarity between types of views';
+    this.circle
+    .transition()
+    .duration(1000)
+        .attr('r', d => Math.log(d.count) + 4);
+  }
+  setCircleNumRecords() {
+    document.getElementById('description').innerText = 'Circle Size represents number of records on a log scale. Links show similarity between types of views';
+    this.circle
+    .transition()
+    .duration(1000)
+        .attr('r', d => Math.log(d.recordCount + 1) / 2);
   }
 
   render() {
@@ -193,14 +231,17 @@ export class App {
     div.innerHTML = `${body}`;
     div.classList.add(styles.table);
 
-    this.dom.innerHTML = '';
+    this.dom.innerHTML = `
+      <a class="${styles.link}" onclick="app.setCircleNumViews()">number of views</a>
+      <a class="${styles.link}" onclick="app.setCircleNumRecords()">number of records</a>
+    `;
     this.dom.appendChild(div);
   }
   // begin force simulation stuff
   ticked() {
     this.node
         .attr('transform', (d) => {
-          d.x = Math.max(maxRadius, Math.min(this.width - maxRadius, d.x));
+          d.x = Math.max(maxRadius, Math.min(this.width * 0.8 - maxRadius, d.x));
           d.y = Math.max(maxRadius, Math.min(this.height - maxRadius, d.y));
           return `translate(${d.x},${d.y})`;
         });
@@ -221,7 +262,12 @@ export class App {
 
     let name = '',
       type = '';
-    el.innerHTML = `<span class=${styles.title}>${d.id}</span><br>`;
+    el.innerHTML = `
+    <span class=${styles.title}>${d.id}</span><br>
+    <span class=${styles.records}>${d.recordCount} records</span>&nbsp;&nbsp;
+    <span class=${styles.views}>${d.count} views</span>
+
+    <br>`;
     d.params.forEach((param) => {
       [name, type] = param.split('-');
       el.innerHTML += `<span class="${styles.paramName}">${name}</span>${type}<br>`;
@@ -309,10 +355,9 @@ export class App {
             .on('end', this.dragended.bind(this)))
       .on('click', this.clickNode.bind(this));
 
-    this.node.append('circle')
+    this.circle = this.node.append('circle')
         .attr('r', d => Math.log(d.count) + 5)
         .attr('fill', d => color(d.group));
-
 
     this.node.append('title')
         .text(d => d.id);
