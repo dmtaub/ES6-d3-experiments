@@ -1,6 +1,7 @@
 import * as styles from './App.scss';
 const d3 = require('d3');
 window.d3 = d3; // for testing
+const maxRadius = 2;
 
 const groupedURL = require('file-loader!./GroupedViews.csv');
 const countsURL = require('file-loader!./ViewCounts.csv');
@@ -193,16 +194,17 @@ export class App {
   }
   // begin force simulation stuff
   ticked() {
+    this.node
+        .attr('transform', (d) => {
+          d.x = Math.max(maxRadius, Math.min(this.width - maxRadius, d.x));
+          d.y = Math.max(maxRadius, Math.min(this.height - maxRadius, d.y));
+          return `translate(${d.x},${d.y})`;
+        });
     this.link
         .attr('x1', d => d.source.x)
         .attr('y1', d => d.source.y)
         .attr('x2', d => d.target.x)
         .attr('y2', d => d.target.y);
-
-    this.node
-        .attr('transform', (d) => `translate(${d.x},${d.y})`);
-       // .attr('cx', d => d.x)
-       // .attr('cy', d => d.y);
   }
 
   dragstarted(d) {
@@ -244,15 +246,18 @@ export class App {
 
   createChart(graph) {
     const svg = d3.select('svg'),
-      svgel = svg.node(),
-      width = svgel.clientWidth,
-      height = svgel.clientHeight;
+      svgel = svg.node();
+    this.width = svgel.clientWidth;
+    this.height = svgel.clientHeight;
 
     const view = svg.append('g').attr('class', 'viewport');
 
     svg.call(d3.zoom().scaleExtent([1 / 4, 4])
         .on('zoom', () => {
+          this.height = svgel.clientHeight / d3.event.transform.k;
+          this.width = svgel.clientWidth / d3.event.transform.k;
           view.attr('transform', d3.event.transform);
+          if (!d3.event.active) this.simulation.alphaTarget(0.3).restart();
         }));
 
     const color = d3.scaleOrdinal(d3.schemeCategory20);
@@ -260,7 +265,7 @@ export class App {
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink().id(d => d.id))
       .force('charge', d3.forceManyBody())
-      .force('center', d3.forceCenter(width / 2, height / 2));
+      .force('center', d3.forceCenter(this.width / 2, this.height / 2));
 
     this.link = view.append('g')
       .attr('class', styles.links)
