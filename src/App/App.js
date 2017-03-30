@@ -6,6 +6,9 @@ const maxRadius = 2;
 const groupedURL = require('file-loader!./GroupedViews.csv');
 const countsURL = require('file-loader!./ViewCounts.csv');
 
+const color = d3.scaleOrdinal(d3.schemeCategory20);
+
+
 export class App {
 
   constructor(dom, options) {
@@ -207,6 +210,23 @@ export class App {
         .attr('y2', d => d.target.y);
   }
 
+  clickNode(d) {
+    const el = document.getElementById('hovering');
+    el.classList.add(styles.hovering);
+    console.log(d);
+    this.node
+      .select('circle')
+      .style('fill', dd => dd.id === d.id ? 'red' : color(d.group));
+
+    let name = '',
+      type = '';
+    el.innerHTML = `<span class=${styles.title}>${d.id}</span><br>`;
+    d.params.forEach((param) => {
+      [name, type] = param.split('-');
+      el.innerHTML += `<span class="${styles.paramName}">${name}</span>${type}<br>`;
+    });
+  }
+
   dragstarted(d) {
     if (!d3.event.active) this.simulation.alphaTarget(0.3).restart();
     d.fx = d.x;
@@ -258,9 +278,8 @@ export class App {
           this.width = svgel.clientWidth / d3.event.transform.k;
           view.attr('transform', d3.event.transform);
           if (!d3.event.active) this.simulation.alphaTarget(0.3).restart();
-        }));
-
-    const color = d3.scaleOrdinal(d3.schemeCategory20);
+        }))
+        .on('dblclick.zoom', null);
 
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink().id(d => d.id))
@@ -280,10 +299,11 @@ export class App {
       .enter().append('g').attr('class', 'node').call(d3.drag()
             .on('start', this.dragstarted.bind(this))
             .on('drag', this.dragged.bind(this))
-            .on('end', this.dragended.bind(this)));
+            .on('end', this.dragended.bind(this)))
+      .on('click', this.clickNode.bind(this));
 
     this.node.append('circle')
-        .attr('r', d => d.radius)
+        .attr('r', d => Math.log(d.count) + 5)
         .attr('fill', d => color(d.group));
 
 

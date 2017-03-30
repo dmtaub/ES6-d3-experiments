@@ -21,6 +21,9 @@
   stroke: #fff;
   cursor: crosshair;
   stroke-width: 1.5px;
+  &:hover{
+    stroke: #000;
+  }
 }
 
 .nodes text {
@@ -31,4 +34,23 @@
 .svg1 {
   height: 90%;
   width: 100%;
+}
+.title{
+  font-size: 12pt;
+}
+
+.paramName{
+  display: inline-block;
+  width: 100px;
+}
+.hovering{
+  position: absolute;
+  pointer-events: none;
+  right: 0px;
+  top: 140px;
+  width: 300px;
+  font-size: 10px;
+  color: red;
+  background-color: white;
+  opacity: 0.5;
 }
