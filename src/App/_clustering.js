@@ -1,6 +1,6 @@
 import * as styles from './App.scss';
 const d3 = require('d3');
-
+// let tempNode = null;
 const maxRadius = 2;
 const color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -16,14 +16,14 @@ export class Clusters {
     this.circle
     .transition()
     .duration(1000)
-        .attr('r', d => Math.log(d.count) + 4);
+        .attr('r', (d) => Math.log(d.count) + 4);
   }
   setCircleNumRecords() {
     document.getElementById('description').innerHTML = 'Circle Size represents number of records on a log scale. <br>Links show similarity between types of views';
     this.circle
     .transition()
     .duration(1000)
-        .attr('r', d => Math.log(d.recordCount + 1) / 2);
+        .attr('r', (d) => Math.log(d.recordCount + 1) / 2);
   }
 
   render() {
@@ -54,12 +54,24 @@ export class Clusters {
   }
 
   constructor() {
-    this.graph = {nodes: [], links: []};
     document.getElementById('description').innerHTML = 'Circle Size represents number of views on a log scale.<br> Links show similarity between types of views';
   }
 
-  update(grouped, fields) {
+  // removeNode(i) {
+  //   [tempNode] = this.graph.nodes.splice(i, 1);
+  //   this.graph.links = this.graph.links.filter((l) => l.source !== tempNode && l.target !== tempNode);
+  // }
 
+  update(grouped, fields) {
+    // store originals for later;
+    this.grouped = grouped;
+    this.fields = fields;
+
+    this.generate();
+  }
+
+  generate () {
+    this.graph = {nodes: [], links: []};
 
     let type2 = null,
       type = null,
@@ -69,7 +81,7 @@ export class Clusters {
     let i = 0,
       j = 0;
 
-    for (type of grouped) {
+    for (type of this.grouped) {
       this.graph.nodes.push(type);
     }
 
@@ -89,7 +101,7 @@ export class Clusters {
 
     // if all param nodes know their linked types, we can iterate
     // over them to count co-occurance
-    for (param of Object.values(fields)) {
+    for (param of Object.values(this.fields)) {
       if (paramIgnoreList.indexOf(param.id) === -1) {
         loopOverPairs(param);
       }
@@ -113,9 +125,9 @@ export class Clusters {
     const nodeSet = new Set();
     // second pass to decide which links to add
     // add link if param has > 1 references
-    for (type of grouped) {
+    for (type of this.grouped) {
       for (param of type.params) {
-        if (fields[param].count > 1) {
+        if (this.fields[param].count > 1) {
           this.graph.links.push({
             'source': param,
             'target': type.id,
@@ -123,7 +135,7 @@ export class Clusters {
           });
           // add node for param when it meets condition
           if (!nodeSet.has(param)) {
-            nodeSet.add(fields[param]);
+            nodeSet.add(this.fields[param]);
           }
         }
       }
@@ -218,16 +230,15 @@ export class Clusters {
   createChart() {
     const svg = d3.select('svg#types'),
       svgel = svg.node();
+
     this.width = svgel.clientWidth;
     this.height = svgel.clientHeight;
-
-    const view = svg.append('g').attr('class', 'viewport');
 
     svg.call(d3.zoom().scaleExtent([1 / 4, 4])
         .on('zoom', () => {
           this.height = svgel.clientHeight / d3.event.transform.k;
           this.width = svgel.clientWidth / d3.event.transform.k;
-          view.attr('transform', d3.event.transform);
+          this.viewport.attr('transform', d3.event.transform);
           if (!d3.event.active) this.simulation.alphaTarget(0.3).restart();
         }))
         .on('dblclick.zoom', null);
@@ -235,23 +246,39 @@ export class Clusters {
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink().id(d => d.id))
       .force('charge', d3.forceManyBody())
-      .force('center', d3.forceCenter(this.width / 2, this.height / 2));
+      .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+      .on('tick', this.ticked.bind(this));
 
-    this.link = view.append('g')
+    // create SVG subelements
+    this.viewport = svg.append('g')
+      .attr('class', 'viewport');
+    this.link = this.viewport.append('g')
       .attr('class', styles.links)
-      .selectAll('line')
-      .data(this.graph.links)
-      .enter().append('line')
-      .attr('stroke-width', d => Math.sqrt(d.value));
+      .selectAll('.link');
+    this.node = this.viewport.append('g')
+      .attr('class', styles.nodes)
+      .selectAll('.node');
 
-    this.node = view.append('g').attr('class', styles.nodes)
-      .selectAll('.node')
-      .data(this.graph.nodes)
+
+    this.recreateData();
+
+  }
+
+  recreateData() {
+    this.node = this.node.data(this.graph.nodes);
+    this.node.exit().remove();
+    this.node = this.node
       .enter().append('g').attr('class', 'node').call(d3.drag()
             .on('start', this.dragstarted.bind(this))
             .on('drag', this.dragged.bind(this))
             .on('end', this.dragended.bind(this)))
-      .on('click', this.clickNode.bind(this));
+      .on('click', this.clickNode.bind(this)).merge(this.node);
+
+    this.link = this.link.data(this.graph.links, (d) => `${d.source.id}-${d.target.id}`);
+    this.link.exit().remove();
+    this.link = this.link
+      .enter().append('line').attr('class', 'link')
+      .attr('stroke-width', d => Math.sqrt(d.value));
 
     this.circle = this.node.append('circle')
         .attr('r', d => Math.log(d.count) + 5)
@@ -266,11 +293,13 @@ export class Clusters {
           .text((d) => d.displayName ? d.id : '');
 
     this.simulation
-        .nodes(this.graph.nodes)
-        .on('tick', this.ticked.bind(this));
+        .nodes(this.graph.nodes);
 
     this.simulation.force('link')
         .links(this.graph.links);
+
+    this.simulation.alpha(1).restart();
+
   }
 
 }
