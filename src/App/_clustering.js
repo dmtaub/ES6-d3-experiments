@@ -33,6 +33,11 @@ export class Clusters {
     div.classList.add(styles.table);
     this.dom = div;
 
+    this.hovering = document.createElement('div');
+    this.hovering.classList.add(styles.hovering);
+    this.dom.appendChild(this.hovering);
+
+
     div = document.createElement('div');
     div.classList.add(styles.controls);
 
@@ -161,11 +166,6 @@ export class Clusters {
   }
 
   clickNode(d) {
-    if (!this.hovering) {
-      this.hovering = document.createElement('div');
-      this.hovering.classList.add(styles.hovering);
-      this.dom.appendChild(this.hovering);
-    }
     // console.log(d);
     this.node
       .select('circle')
@@ -259,12 +259,11 @@ export class Clusters {
       .attr('class', styles.nodes)
       .selectAll('.node');
 
-
-    this.recreateData();
+    this.renderChart();
 
   }
 
-  recreateData() {
+  renderChart() {
     this.node = this.node.data(this.graph.nodes);
     this.node.exit().remove();
     this.node = this.node
@@ -274,12 +273,7 @@ export class Clusters {
             .on('end', this.dragended.bind(this)))
       .on('click', this.clickNode.bind(this)).merge(this.node);
 
-    this.link = this.link.data(this.graph.links, (d) => `${d.source.id}-${d.target.id}`);
-    this.link.exit().remove();
-    this.link = this.link
-      .enter().append('line').attr('class', 'link')
-      .attr('stroke-width', d => Math.sqrt(d.value));
-
+    this.node.select('circle').remove();
     this.circle = this.node.append('circle')
         .attr('r', d => Math.log(d.count) + 5)
         .attr('fill', d => color(d.group));
@@ -291,6 +285,13 @@ export class Clusters {
           .attr('dx', 6)
           .attr('dy', '.35em')
           .text((d) => d.displayName ? d.id : '');
+
+    this.link = this.link.data(this.graph.links);
+    this.link.exit().remove();
+    this.link = this.link
+      .enter().append('line').attr('class', 'link')
+      .attr('stroke-width', d => Math.sqrt(d.value))
+      .merge(this.link);
 
     this.simulation
         .nodes(this.graph.nodes);

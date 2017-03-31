@@ -43,6 +43,14 @@
   display: inline-block;
   width: 100px;
 }
+
+.range{
+  position: absolute;
+  right: 70px;
+  top: 250px;
+  transform: rotate(270deg);
+}
+
 .hovering{
   position: absolute;
   pointer-events: none;
