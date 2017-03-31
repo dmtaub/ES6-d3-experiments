@@ -1,4 +1,5 @@
 import * as styles from './App.scss';
+
 const d3 = require('d3');
 // let tempNode = null;
 const maxRadius = 2;
@@ -37,6 +38,28 @@ export class Clusters {
     this.hovering.classList.add(styles.hovering);
     this.dom.appendChild(this.hovering);
 
+    this.range = document.createElement('div');
+    this.range.classList.add(styles.range);
+    this.dom.appendChild(this.range);
+
+    this.slider = window.nouislider.create(this.range, {
+      start: [0, 25],
+      step: 1,
+      connect: true,
+      orientation: 'vertical',
+      // direction: 'rtl', // Put '0' at the bottom of the slider
+      behaviour: 'drag',
+      margin: 1,
+      range: {
+        min: 0,
+        max: 25
+      },
+      pips: { // Show a scale with the slider
+        mode: 'steps',
+        stepped: true,
+        density: 4
+      }
+    });
 
     div = document.createElement('div');
     div.classList.add(styles.controls);
@@ -73,10 +96,13 @@ export class Clusters {
     this.fields = fields;
 
     this.generate();
+    this.graph = {nodes: this.allNodes, links: this.allLinks};
+
   }
 
   generate () {
-    this.graph = {nodes: [], links: []};
+    this.allNodes = [];
+    this.allLinks = [];
 
     let type2 = null,
       type = null,
@@ -87,7 +113,7 @@ export class Clusters {
       j = 0;
 
     for (type of this.grouped) {
-      this.graph.nodes.push(type);
+      this.allNodes.push(type);
     }
 
 
@@ -118,7 +144,7 @@ export class Clusters {
     for (key in pairs) {
       if (key[0] === 'T') {
         [type, type2] = key.split(',');
-        this.graph.links.push({
+        this.allLinks.push({
           'source': type,
           'target': type2,
           'value': pairs[key]
@@ -259,6 +285,36 @@ export class Clusters {
       .attr('class', styles.nodes)
       .selectAll('.node');
 
+    // TODO: bindall events that re-render from function in here..
+
+    let min = null,
+      max = null,
+      test = false;
+    const nodes = new Set();
+
+    this.slider.on('slide', () => {
+      [min, max] = this.slider.get().map((x) => parseInt(x, 10));
+
+      // clear set that we use to collect names of linked nodes
+      nodes.clear();
+
+      // console.log(min, max);
+
+      // filter to only links with specified weight
+      this.graph.links = this.allLinks.filter((l) => {
+        test = l.value > min && l.value < max;
+        if (test) {
+          nodes.add(l.source.id);
+          nodes.add(l.target.id);
+        }
+        return test;
+      });
+      // filter to only nodes with currently active links, unless min is 0
+      this.graph.nodes = this.allNodes.filter((n) => min === 0 || nodes.has(n.id));
+      if (this.graph.nodes.length) this.renderChart();
+    });
+
+    // now called automatically on slider update
     this.renderChart();
 
   }
@@ -267,11 +323,11 @@ export class Clusters {
     this.node = this.node.data(this.graph.nodes);
     this.node.exit().remove();
     this.node = this.node
-      .enter().append('g').attr('class', 'node').call(d3.drag()
+      .enter().append('g').attr('class', 'node').merge(this.node).call(d3.drag()
             .on('start', this.dragstarted.bind(this))
             .on('drag', this.dragged.bind(this))
             .on('end', this.dragended.bind(this)))
-      .on('click', this.clickNode.bind(this)).merge(this.node);
+      .on('click', this.clickNode.bind(this));
 
     this.node.select('circle').remove();
     this.circle = this.node.append('circle')
@@ -290,8 +346,8 @@ export class Clusters {
     this.link.exit().remove();
     this.link = this.link
       .enter().append('line').attr('class', 'link')
-      .attr('stroke-width', d => Math.sqrt(d.value))
-      .merge(this.link);
+      .merge(this.link)
+      .attr('stroke-width', d => Math.sqrt(d.value));
 
     this.simulation
         .nodes(this.graph.nodes);

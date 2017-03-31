@@ -30,7 +30,9 @@
   "homepage": "https://github.com/micooz/es6-webpack-starter#readme",
   "dependencies": {
     "babel-polyfill": "^6.23.0",
-    "d3": "^4.7.4"
+    "d3": "^4.7.4",
+    "nouislider": "^9.2.0",
+    "wnumb": "^1.1.0"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.6",
