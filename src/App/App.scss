@@ -47,7 +47,15 @@
 .range{
   float: right;
   height: 100%;
+  margin-right:30px;
   // margin: 0 auto 30px;
+}
+
+.rangeNodes{
+  margin-top: 5px;
+}
+.rangeNodeLabel{
+  margin-top: 10px;
 }
 
 .hovering{
@@ -70,4 +78,13 @@
   cursor: pointer;
   &:hover{color: darkblue;}
   &:active{color: white;}
+}
+
+.left {
+  opacity: 1;
+}
+
+
+.right {
+  float: right;
 }

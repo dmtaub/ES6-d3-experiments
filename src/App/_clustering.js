@@ -12,22 +12,35 @@ const paramIgnoreList = ['PATID-NUMBER-disabled'];
 
 
 export class Clusters {
-  setCircleNumViews() {
-    document.getElementById('description').innerHTML = 'Circle Size represents number of views on a log scale. <br>Links show similarity between types of views';
+  updateCircles(label, max, radiusFn) {
+    this.sliderNodes.updateOptions({'range': {'min': 0, max}});
+    // this.sliderNodes.querySelector('.noUi-pips').clear;
+    const oldPips = this.rangeNodes.querySelector('.noUi-pips');
+    oldPips.parentElement.removeChild(oldPips);
+    this.sliderNodes.pips(this.sliderNodes.options.pips);
+
+    this.subtitle.innerHTML = label;
     this.circle
-    .transition()
-    .duration(1000)
-        .attr('r', (d) => Math.log(d.count) + 4);
+      .transition()
+      .duration(1000)
+      .attr('r', radiusFn);
+  }
+  setCircleNumViews() {
+    this.updateCircles('Circle Size represents number of views on a log scale.',
+      this.maxViews, (d) => Math.log(d.count) + 4);
   }
   setCircleNumRecords() {
-    document.getElementById('description').innerHTML = 'Circle Size represents number of records on a log scale. <br>Links show similarity between types of views';
-    this.circle
-    .transition()
-    .duration(1000)
-        .attr('r', (d) => Math.log(d.recordCount + 1) / 2);
+    this.updateCircles('Circle Size represents number of records on a log scale.',
+      this.maxRecords, (d) => Math.log(d.recordCount + 1) / 2);
   }
 
   render() {
+    this.descriptionEl = document.getElementById('description');
+    this.subtitle = document.createElement('div');
+    this.subtitle.classList.add(styles.left);
+    this.subtitle.innerHTML = 'Circle Size represents number of views on a log scale.';
+    this.descriptionEl.appendChild(this.subtitle);
+
     let div = document.createElement('div');
     const body = `<svg id='types' class=${styles.svg1}></svg>`;
     div.innerHTML = `${body}`;
@@ -38,16 +51,26 @@ export class Clusters {
     this.hovering.classList.add(styles.hovering);
     this.dom.appendChild(this.hovering);
 
+    // this.appendDiv('hovering');
+    // this.appendDiv('range');
+    div = document.createElement('span');
+    div.innerText = 'Links show similarity between types of views';
+    this.descriptionEl.appendChild(div);
+
+    div = document.createElement('div');
+    div.classList.add(styles.right);
+    div.innerText = 'Limit to nodes with specified # links:';
+    this.descriptionEl.appendChild(div);
+
     this.range = document.createElement('div');
     this.range.classList.add(styles.range);
     this.dom.appendChild(this.range);
-
     this.slider = window.nouislider.create(this.range, {
       start: [0, 25],
       step: 1,
       connect: true,
       orientation: 'vertical',
-      // direction: 'rtl', // Put '0' at the bottom of the slider
+      direction: 'rtl', // Put '0' at the bottom of the slider
       behaviour: 'drag',
       margin: 1,
       range: {
@@ -55,9 +78,10 @@ export class Clusters {
         max: 25
       },
       pips: { // Show a scale with the slider
-        mode: 'steps',
+        mode: 'count',
         stepped: true,
-        density: 4
+        density: 4,
+        values: 6
       }
     });
 
@@ -76,13 +100,38 @@ export class Clusters {
     a.addEventListener('click', this.setCircleNumRecords.bind(this));
     div.appendChild(a);
 
+    const div2 = document.createElement('div');
+    div2.classList.add(styles.rangeNodeLabel);
+    div2.innerText = 'Select range for nodes with specific view/record count.';
+    div.appendChild(div2);
+
+    this.rangeNodes = document.createElement('div');
+    this.rangeNodes.classList.add(styles.rangeNodes);
+    div.appendChild(this.rangeNodes);
+    this.sliderNodes = window.nouislider.create(this.rangeNodes, {
+      start: [0, 100],
+      step: 1,
+      connect: true,
+      behaviour: 'drag',
+      margin: 1,
+      range: {
+        min: 0,
+        max: 100
+      },
+      pips: { // Show a scale with the slider
+        mode: 'count',
+        stepped: true,
+        values: 11
+      }
+    });
+
     this.dom.appendChild(div);
 
     return this.dom;
   }
 
   constructor() {
-    document.getElementById('description').innerHTML = 'Circle Size represents number of views on a log scale.<br> Links show similarity between types of views';
+    console.log('initializing chart');
   }
 
   // removeNode(i) {
@@ -97,6 +146,10 @@ export class Clusters {
 
     this.generate();
     this.graph = {nodes: this.allNodes, links: this.allLinks};
+
+    // TODO: go through grouped and fields to update this
+    this.maxViews = 100;
+    this.maxRecords = 100;
 
   }
 
