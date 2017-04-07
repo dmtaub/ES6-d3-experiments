@@ -11,7 +11,7 @@ const paramIgnoreList = ['PATID-NUMBER-disabled'];
     // TODO: Ranked column names and checkboxes
 
 export class Clusters {
-  updateCircles(label, max, radiusFn) {
+  updateCircles(labelViewport, labelSlider, max, radiusFn) {
 
     this.sliderNodes.updateOptions({'range': {'min': 0, max}});
     // this.sliderNodes.querySelector('.noUi-pips').clear;
@@ -22,19 +22,23 @@ export class Clusters {
     // Reset slider vals, TODO: possibly deal with percent old value.
     this.sliderNodes.set([0, max]);
 
-    this.subtitle.innerHTML = label;
+    this.subtitle.innerHTML = labelViewport;
+    this.sliderNodesLabel.innerText = labelSlider;
+
     this.circle
       .transition()
       .duration(1000)
       .attr('r', radiusFn);
   }
   setCircleNumViews() {
-    this.updateCircles('Circle Size represents number of views on a log scale.',
+    this.updateCircles('Circle size represents number of views on a log scale.',
+      'Select range for nodes with specific view count.',
       this.maxViews, (d) => Math.log(d.count) + 4);
   }
   setCircleNumRecords() {
-    this.updateCircles('Circle Size represents number of records on a log scale.',
-      this.maxRecords, (d) => Math.log(d.recordCount + 1) / 2);
+    this.updateCircles('Circle size represents number of records on a log scale.',
+     'Select range for nodes with specific record count.',
+      this.maxRecords, (d) => Math.log(d.recordCount + 1) / 1.5);
   }
 
   render() {
@@ -104,10 +108,9 @@ export class Clusters {
     a.addEventListener('click', this.setCircleNumRecords.bind(this));
     div.appendChild(a);
 
-    const div2 = document.createElement('div');
-    div2.classList.add(styles.rangeNodeLabel);
-    div2.innerText = 'Select range for nodes with specific view/record count.';
-    div.appendChild(div2);
+    this.sliderNodesLabel = document.createElement('div');
+    this.sliderNodesLabel.classList.add(styles.rangeNodeLabel);
+    div.appendChild(this.sliderNodesLabel);
 
     this.rangeNodes = document.createElement('div');
     this.rangeNodes.classList.add(styles.rangeNodes);
