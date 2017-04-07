@@ -10,14 +10,17 @@ const paramIgnoreList = ['PATID-NUMBER-disabled'];
     // TODO: Further condense paired sets of FOO and A_FOO
     // TODO: Ranked column names and checkboxes
 
-
 export class Clusters {
   updateCircles(label, max, radiusFn) {
+
     this.sliderNodes.updateOptions({'range': {'min': 0, max}});
     // this.sliderNodes.querySelector('.noUi-pips').clear;
     const oldPips = this.rangeNodes.querySelector('.noUi-pips');
     oldPips.parentElement.removeChild(oldPips);
     this.sliderNodes.pips(this.sliderNodes.options.pips);
+
+    // Reset slider vals, TODO: possibly deal with percent old value.
+    this.sliderNodes.set([0, max]);
 
     this.subtitle.innerHTML = label;
     this.circle
@@ -38,7 +41,6 @@ export class Clusters {
     this.descriptionEl = document.getElementById('description');
     this.subtitle = document.createElement('div');
     this.subtitle.classList.add(styles.left);
-    this.subtitle.innerHTML = 'Circle Size represents number of views on a log scale.';
     this.descriptionEl.appendChild(this.subtitle);
 
     let div = document.createElement('div');
@@ -65,6 +67,8 @@ export class Clusters {
     this.range = document.createElement('div');
     this.range.classList.add(styles.range);
     this.dom.appendChild(this.range);
+
+    // https://refreshless.com/nouislider/pips/
     this.slider = window.nouislider.create(this.range, {
       start: [0, 25],
       step: 1,
@@ -147,9 +151,16 @@ export class Clusters {
     this.generate();
     this.graph = {nodes: this.allNodes, links: this.allLinks};
 
-    // TODO: go through grouped and fields to update this
     this.maxViews = 100;
     this.maxRecords = 100;
+
+    let elt = null;
+    for (elt of grouped) {
+      this.maxViews = Math.max(this.maxViews, elt.count);
+      this.maxRecords = Math.max(this.maxRecords, elt.recordCount);
+    }
+
+    // TODO: go through grouped and fields to update this
 
   }
 
@@ -369,7 +380,7 @@ export class Clusters {
 
     // now called automatically on slider update
     this.renderChart();
-
+    this.setCircleNumViews();
   }
 
   renderChart() {
