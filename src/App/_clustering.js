@@ -4,14 +4,12 @@ const d3 = require('d3');
 // let tempNode = null;
 const maxRadius = 2;
 const color = d3.scaleOrdinal(d3.schemeCategory20);
-
-const paramIgnoreList = ['PATID-NUMBER-disabled'];
-
-    // TODO: Further condense paired sets of FOO and A_FOO
-    // TODO: Ranked column names and checkboxes
+// const paramIgnoreList = ['PATID-NUMBER-disabled'];
+// TODO: Further condense paired sets of FOO and A_FOO
+// TODO: Ranked column names and checkboxes
 
 export class Clusters {
-  updateCircles(labelViewport, labelSlider, max, radiusFn) {
+  updateCircles(labelViewport, labelSlider, max) {
 
     this.sliderNodes.updateOptions({'range': {'min': 0, max}});
     // this.sliderNodes.querySelector('.noUi-pips').clear;
@@ -28,17 +26,21 @@ export class Clusters {
     this.circle
       .transition()
       .duration(1000)
-      .attr('r', radiusFn);
+      .attr('r', this.radiusFn);
   }
   setCircleNumViews() {
+    this.countExtractor = (d) => d.count;
+    this.radiusFn = (d) => Math.log(d.count) + 4;
+
     this.updateCircles('Circle size represents number of views on a log scale.',
-      'Select range for nodes with specific view count:',
-      this.maxViews, (d) => Math.log(d.count) + 4);
+      'Select range for nodes with specific view count:', this.maxViews);
   }
   setCircleNumRecords() {
+    this.countExtractor = (d) => d.recordCount;
+    this.radiusFn = (d) => Math.log(d.recordCount + 1) / 1.5 + 1;
+
     this.updateCircles('Circle size represents number of records on a log scale.',
-     'Select range for nodes with specific record count:',
-      this.maxRecords, (d) => Math.log(d.recordCount + 1) / 1.5);
+     'Select range for nodes with specific record count:', this.maxRecords);
   }
 
   render() {
@@ -143,11 +145,6 @@ export class Clusters {
     console.log('initializing chart');
   }
 
-  // removeNode(i) {
-  //   [tempNode] = this.graph.nodes.splice(i, 1);
-  //   this.graph.links = this.graph.links.filter((l) => l.source !== tempNode && l.target !== tempNode);
-  // }
-
   update(grouped, fields) {
     // store originals for later;
     this.grouped = grouped;
@@ -164,8 +161,6 @@ export class Clusters {
       this.maxViews = Math.max(this.maxViews, elt.count);
       this.maxRecords = Math.max(this.maxRecords, elt.recordCount);
     }
-
-    // TODO: go through grouped and fields to update this
 
   }
 
@@ -202,9 +197,9 @@ export class Clusters {
     // if all param nodes know their linked types, we can iterate
     // over them to count co-occurance
     for (param of Object.values(this.fields)) {
-      if (paramIgnoreList.indexOf(param.id) === -1) {
-        loopOverPairs(param);
-      }
+//      if (paramIgnoreList.indexOf(param.id) === -1) {
+      loopOverPairs(param);
+//      }
     }
 
     window.pairs = pairs;
@@ -328,15 +323,9 @@ export class Clusters {
   }
 
   /**
-   * @param  {Object}
-   * @return {undefined}
-   *
-   * expects graph input of form:
-   *
    const graph = {
       'nodes': [
         {'id': 'Myriel', 'group': 1},
-        {'id': 'Napoleon', 'group': 1},
         {'id': 'Mlle.Baptistine', 'group': 2}
       ],
       'links': [
@@ -385,7 +374,7 @@ export class Clusters {
       test = false;
     const nodes = new Set();
 
-    this.slider.on('slide', () => {
+    const filterByLinks = function() {
       [min, max] = this.slider.get().map((x) => parseInt(x, 10));
 
       // clear set that we use to collect names of linked nodes
@@ -404,13 +393,51 @@ export class Clusters {
       });
       // filter to only nodes with currently active links, unless min is 0
       this.graph.nodes = this.allNodes.filter((n) => min === 0 || nodes.has(n.id));
+    }.bind(this);
+
+    const filterByNumber = function() {
+      [min, max] = this.sliderNodes.get().map((x) => parseInt(x, 10));
+
+      // clear set that we use to collect names of linked nodes
+      nodes.clear();
+
+      // filter to only nodes with currently active links, unless min is 0
+      let count = null;
+      const countExtractor = this.countExtractor;
+      this.graph.nodes = this.graph.nodes.filter(function(node) {
+        count = countExtractor(node);
+        if (count < max && count > min) {
+          nodes.add(node.id);
+          return true;
+        }
+        return false;
+      });
+      // filter to only links containing nodes above
+      this.graph.links = this.graph.links.filter((l) => nodes.has(l.source.id) && nodes.has(l.target.id));
+
+    }.bind(this);
+
+    const nodeFn = () => {
+      filterByLinks();
+      // now do it based on number...
+      filterByNumber();
       if (this.graph.nodes.length) this.renderChart();
-    });
+    };
+
+    // slider for links
+    this.slider.on('slide', nodeFn.bind(this));
+    this.slider.on('set', nodeFn.bind(this));
+
+    // slider for nodes
+    this.sliderNodes.on('slide', nodeFn.bind(this));
+    this.sliderNodes.on('set', nodeFn.bind(this));
+
 
     // now called automatically on slider update
     this.renderChart();
     this.setCircleNumViews();
   }
+
 
   renderChart() {
     this.node = this.node.data(this.graph.nodes);
@@ -424,8 +451,8 @@ export class Clusters {
 
     this.node.select('circle').remove();
     this.circle = this.node.append('circle')
-        .attr('r', d => Math.log(d.count) + 5)
-        .attr('fill', d => color(d.group));
+        .attr('r', this.radiusFn)
+        .attr('fill', d => d.id === this.lastClick ? 'red' : color(d.group));
 
     this.node.append('title')
         .text(d => d.id);
