@@ -32,22 +32,29 @@ export class Clusters {
   }
   setCircleNumViews() {
     this.updateCircles('Circle size represents number of views on a log scale.',
-      'Select range for nodes with specific view count.',
+      'Select range for nodes with specific view count:',
       this.maxViews, (d) => Math.log(d.count) + 4);
   }
   setCircleNumRecords() {
     this.updateCircles('Circle size represents number of records on a log scale.',
-     'Select range for nodes with specific record count.',
+     'Select range for nodes with specific record count:',
       this.maxRecords, (d) => Math.log(d.recordCount + 1) / 1.5);
   }
 
   render() {
+    let div = null;
     this.descriptionEl = document.getElementById('description');
+
+    div = document.createElement('div');
+    div.classList.add(styles.right);
+    div.innerHTML = 'The range of this slider selects which links <br> to show based on # of shared attributes:';
+    this.descriptionEl.appendChild(div);
+
     this.subtitle = document.createElement('div');
     this.subtitle.classList.add(styles.left);
     this.descriptionEl.appendChild(this.subtitle);
 
-    let div = document.createElement('div');
+    div = document.createElement('div');
     const body = `<svg id='types' class=${styles.svg1}></svg>`;
     div.innerHTML = `${body}`;
     div.classList.add(styles.table);
@@ -60,12 +67,7 @@ export class Clusters {
     // this.appendDiv('hovering');
     // this.appendDiv('range');
     div = document.createElement('span');
-    div.innerText = 'Links show similarity between types of views';
-    this.descriptionEl.appendChild(div);
-
-    div = document.createElement('div');
-    div.classList.add(styles.right);
-    div.innerText = 'Limit to nodes with specified # links:';
+    div.innerText = 'Links show similarity between types of views based on shared attributes';
     this.descriptionEl.appendChild(div);
 
     this.range = document.createElement('div');
@@ -97,13 +99,13 @@ export class Clusters {
     div.classList.add(styles.controls);
 
     let a = document.createElement('a');
-    a.classList.add(styles.link);
+    a.classList.add(styles.hyperlink);
     a.innerText = 'number of views';
     a.addEventListener('click', this.setCircleNumViews.bind(this));
     div.appendChild(a);
 
     a = document.createElement('a');
-    a.classList.add(styles.link);
+    a.classList.add(styles.hyperlink);
     a.innerText = 'number of records';
     a.addEventListener('click', this.setCircleNumRecords.bind(this));
     div.appendChild(a);
@@ -256,6 +258,30 @@ export class Clusters {
       .attr('y1', d => d.source.y)
       .attr('x2', d => d.target.x)
       .attr('y2', d => d.target.y);
+  }
+
+  clickLink(d) {
+    console.log(d);
+    this.link.attr('stroke', dd => dd.index === d.index ? 'orange' : '#999');
+
+    this.node
+      .select('circle')
+      .style('fill', dd => (dd.id === d.source.id || dd.id === d.target.id) ? 'orange' : color(dd.group));
+
+
+    this.hovering.innerHTML = `<span class=${styles.title}>${d.source.id} and ${d.target.id} share:</span><br>`;
+    let name = '',
+      type = '';
+
+    d.source.params.forEach((param) => {
+      if (d.target.params.indexOf(param) !== -1) {
+        [name, type] = param.split('-');
+        this.hovering.innerHTML += `<span class="${styles.paramName}">${name}</span>${type}<br>`;
+      }
+    });
+    this.lastClick = d.index;
+
+    // this.link.style('fill', dd => dd.id === d.id ? 'red' : color(d.group));
   }
 
   clickNode(d) {
@@ -412,9 +438,11 @@ export class Clusters {
     this.link = this.link.data(this.graph.links);
     this.link.exit().remove();
     this.link = this.link
-      .enter().append('line').attr('class', 'link')
+      .enter().append('line')
       .merge(this.link)
-      .attr('stroke-width', d => Math.sqrt(d.value));
+      .attr('stroke-width', d => Math.sqrt(d.value) + 1)
+      .attr('stroke', '#999')
+      .on('click', this.clickLink.bind(this));
 
     this.simulation
         .nodes(this.graph.nodes);

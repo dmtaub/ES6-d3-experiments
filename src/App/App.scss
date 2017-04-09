@@ -13,8 +13,11 @@
 }
 
 .links line {
-  stroke: #999;
   stroke-opacity: 0.6;
+  &:hover{
+    cursor: crosshair;
+    stroke: black;
+  }
 }
 
 .nodes circle {
@@ -61,7 +64,7 @@
 .hovering{
   position: absolute;
   pointer-events: none;
-  right: 50px;
+  // right: 50px;
   top: 140px;
   font-size: 10px;
   color: red;
@@ -71,13 +74,16 @@
 .controls{
   margin-top: -2px;
 }
-.link{
+.hyperlink{
   text-decoration: underline;
   color: blue;
   margin-right: 10px;
   cursor: pointer;
   &:hover{color: darkblue;}
   &:active{color: white;}
+}
+.linkSelected{
+  color: red;
 }
 
 .left {
