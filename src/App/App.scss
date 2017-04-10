@@ -61,6 +61,20 @@
   margin-top: 10px;
 }
 
+.selectFields{
+  display: inline-block;
+  height: 100%;
+  width:10%;
+  margin-left: 5px;
+  border: 1px dotted black;
+  overflow:scroll;
+  opacity: 0.5;
+
+  .lineItem {
+    width: 250px;
+  }
+}
+
 .hovering{
   position: absolute;
   pointer-events: none;

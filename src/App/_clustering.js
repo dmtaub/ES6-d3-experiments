@@ -62,6 +62,10 @@ export class Clusters {
     div.classList.add(styles.table);
     this.dom = div;
 
+    this.fieldBoxes = document.createElement('div');
+    this.fieldBoxes.classList.add(styles.selectFields);
+    this.dom.appendChild(this.fieldBoxes);
+
     this.hovering = document.createElement('div');
     this.hovering.classList.add(styles.hovering);
     this.dom.appendChild(this.hovering);
@@ -150,6 +154,8 @@ export class Clusters {
     this.grouped = grouped;
     this.fields = fields;
 
+    this.setupCheckboxes();
+
     this.generate();
     this.graph = {nodes: this.allNodes, links: this.allLinks};
 
@@ -162,6 +168,49 @@ export class Clusters {
       this.maxRecords = Math.max(this.maxRecords, elt.recordCount);
     }
 
+  }
+
+  setupCheckboxes () {
+    let elt = null,
+      checkbox = null,
+      div = null,
+      label = null;
+
+    this.allowedParams = new Set();
+    const callback = function(e) {
+      if (e.target.checked) {
+        this.allowedParams.add(e.target.id);
+      } else {
+        this.allowedParams.delete(e.target.id);
+      }
+      this.generate();
+      this.graph = {nodes: this.allNodes, links: this.allLinks};
+      this.renderChart();
+      this.updateSliders();
+    };
+
+    for (elt of Object.keys(this.fields).sort()) {
+      this.allowedParams.add(elt);
+      elt = this.fields[elt];
+      div = document.createElement('div');
+      div.classList.add(styles.lineItem);
+      checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = elt.name;
+      checkbox.value = true;
+      checkbox.checked = true;
+      checkbox.id = elt.id;
+      checkbox.addEventListener('change', callback.bind(this));
+
+      label = document.createElement('label');
+      label.htmlFor = elt.id;
+      label.title = elt.type;
+      label.appendChild(document.createTextNode(elt.name));
+
+      div.appendChild(checkbox);
+      div.appendChild(label);
+      this.fieldBoxes.appendChild(div);
+    }
   }
 
   generate () {
@@ -197,9 +246,9 @@ export class Clusters {
     // if all param nodes know their linked types, we can iterate
     // over them to count co-occurance
     for (param of Object.values(this.fields)) {
-//      if (paramIgnoreList.indexOf(param.id) === -1) {
-      loopOverPairs(param);
-//      }
+      if (this.allowedParams.has(param.id)) {
+        loopOverPairs(param);
+      }
     }
 
     window.pairs = pairs;
@@ -417,7 +466,7 @@ export class Clusters {
 
     }.bind(this);
 
-    const nodeFn = () => {
+    this.updateSliders = () => {
       filterByLinks();
       // now do it based on number...
       filterByNumber();
@@ -425,15 +474,16 @@ export class Clusters {
     };
 
     // slider for links
-    this.slider.on('slide', nodeFn.bind(this));
-    this.slider.on('set', nodeFn.bind(this));
+    this.slider.on('slide', this.updateSliders.bind(this));
+    this.slider.on('set', this.updateSliders.bind(this));
 
     // slider for nodes
-    this.sliderNodes.on('slide', nodeFn.bind(this));
-    this.sliderNodes.on('set', nodeFn.bind(this));
+    this.sliderNodes.on('slide', this.updateSliders.bind(this));
+    this.sliderNodes.on('set', this.updateSliders.bind(this));
 
 
     // now called automatically on slider update
+
     this.renderChart();
     this.setCircleNumViews();
   }

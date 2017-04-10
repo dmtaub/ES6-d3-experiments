@@ -116,6 +116,8 @@ export class App {
             'group': 1,
             'radius': 4,
             'displayName': false,
+            'name': param.split('-')[0],
+            'type': param.split('-')[1],
             'id': param
           };
         } else {
