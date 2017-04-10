@@ -39,12 +39,25 @@
   width: 80%;
 }
 .title{
+  display: block;
   font-size: 12pt;
+}
+.subtitle{
+  display: block;
 }
 
 .paramName{
   display: inline-block;
   width: 100px;
+  cursor: pointer;
+  &:hover{
+    text-decoration: underline;
+  }
+}
+.paramNameDisabled{
+  display: inline-block;
+  width: 100px;
+  color: black;
 }
 
 .range{
@@ -77,13 +90,16 @@
 
 .hovering{
   position: absolute;
-  pointer-events: none;
+  // pointer-events: none;
   // right: 50px;
   top: 140px;
   font-size: 10px;
   color: red;
   background-color: white;
   opacity: 0.5;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
 }
 .controls{
   margin-top: -2px;

@@ -8,6 +8,12 @@ const color = d3.scaleOrdinal(d3.schemeCategory20);
 // TODO: Further condense paired sets of FOO and A_FOO
 // TODO: Ranked column names and checkboxes
 
+const intersect = function intersect(a, b) {
+  return a.filter(function (e) {
+    return b.indexOf(e) > -1;
+  });
+};
+
 export class Clusters {
   updateCircles(labelViewport, labelSlider, max) {
 
@@ -187,6 +193,7 @@ export class Clusters {
       this.graph = {nodes: this.allNodes, links: this.allLinks};
       this.renderChart();
       this.updateSliders();
+      this.updateHovering();
     };
 
     for (elt of Object.keys(this.fields).sort()) {
@@ -194,6 +201,7 @@ export class Clusters {
       elt = this.fields[elt];
       div = document.createElement('div');
       div.classList.add(styles.lineItem);
+      div.name = elt.id;
       checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.name = elt.name;
@@ -305,27 +313,63 @@ export class Clusters {
   }
 
   clickLink(d) {
-    console.log(d);
     this.link.attr('stroke', dd => dd.index === d.index ? 'orange' : '#999');
 
     this.node
       .select('circle')
       .style('fill', dd => (dd.id === d.source.id || dd.id === d.target.id) ? 'orange' : color(dd.group));
 
+    this.updateHovering(`${d.source.id} and ${d.target.id} share:`, false, intersect(d.source.params, d.target.params));
 
-    this.hovering.innerHTML = `<span class=${styles.title}>${d.source.id} and ${d.target.id} share:</span><br>`;
-    let name = '',
-      type = '';
-
-    d.source.params.forEach((param) => {
-      if (d.target.params.indexOf(param) !== -1) {
-        [name, type] = param.split('-');
-        this.hovering.innerHTML += `<span class="${styles.paramName}">${name}</span>${type}<br>`;
-      }
-    });
     this.lastClick = d.index;
 
     // this.link.style('fill', dd => dd.id === d.id ? 'red' : color(d.group));
+  }
+
+  updateHovering(title, subtitle, elements) {
+    if (title) this._hoverTitle = title;
+    if (subtitle) this._hoverSubtitle = subtitle;
+    if (elements) this._hoverElements = elements;
+
+    this.hovering.innerHTML = '';
+    let span = null;
+
+    span = document.createElement('span');
+    span.classList.add(styles.title);
+    span.innerText = this._hoverTitle;
+    this.hovering.appendChild(span);
+
+    if (subtitle) {
+      span = document.createElement('span');
+      span.classList.add(styles.subtittle);
+      span.innerText = this._hoverSubtitle;
+      this.hovering.appendChild(span);
+    }
+
+    let name = '',
+      type = '';
+
+    this.hovering.appendChild(document.createElement('br'));
+
+    this._hoverElements.forEach((param) => {
+      console.log(param);
+      [name, type] = param.split('-');
+      span = document.createElement('span');
+      span.innerText = name;
+
+      if (this.allowedParams.has(param)) {
+        span.classList.add(styles.paramName);
+        span.addEventListener('click', function() {
+          window.location.hash = param;
+        });
+      } else {
+        span.classList.add(styles.paramNameDisabled);
+      }
+      this.hovering.appendChild(span);
+      this.hovering.append(type);
+      this.hovering.appendChild(document.createElement('br'));
+
+    });
   }
 
   clickNode(d) {
@@ -334,18 +378,7 @@ export class Clusters {
       .select('circle')
       .style('fill', dd => dd.id === d.id ? 'red' : color(d.group));
 
-    let name = '',
-      type = '';
-    this.hovering.innerHTML = `
-    <span class=${styles.title}>${d.id}</span><br>
-    <span class=${styles.records}>${d.recordCount} records</span>&nbsp;&nbsp;
-    <span class=${styles.views}>${d.count} views</span>
-
-    <br>`;
-    d.params.forEach((param) => {
-      [name, type] = param.split('-');
-      this.hovering.innerHTML += `<span class="${styles.paramName}">${name}</span>${type}<br>`;
-    });
+    this.updateHovering(d.id, `${d.recordCount} records   ${d.count} views`, d.params);
 
     // debug, output all matching views
     console.log(`This type has ${d.count} views, click again to print them to console.`);
