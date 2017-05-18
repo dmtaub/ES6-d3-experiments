@@ -15,6 +15,16 @@ const intersect = function intersect(a, b) {
 };
 
 export class Clusters {
+  countViewsRecords = function () {
+    let views = 0;
+    let records = 0;
+    this.allNodes.forEach(function(x) {
+      views += x.views.length;
+      records += x.recordCount;
+    });
+    console.log('VIEWS ', views);
+    console.log('RECORDS ', records);
+  }
   updateCircles(labelViewport, labelSlider, max) {
 
     this.sliderNodes.updateOptions({'range': {'min': 0, max}});

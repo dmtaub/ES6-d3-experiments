@@ -85,6 +85,21 @@ export class App {
     const fields = {};
 
     window.app.fields = fields;
+    window.app.searchViews = function( i ) {
+      Object.keys(window.app.counted).forEach( function(b) {
+        if (b.indexOf(i) !== -1) {
+          console.log(b);
+        }
+      });
+    };
+    window.app.searchFields = function( i ) {
+      Object.keys(window.app.fields).forEach( function(b) {
+        if (b.indexOf(i) !== -1) {
+          console.log(b, ':\n', window.app.fields[b].types.map((x) => window.app.grouped[x.replace('Type', '') - 1].views.join('\n ')).join('\n '));
+        }
+      });
+    };
+
 
     // initial pass to create and add type nodes, create param nodes, and collect stats
     let index = 0;
