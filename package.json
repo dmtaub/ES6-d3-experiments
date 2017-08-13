@@ -1,16 +1,12 @@
 {
-  "name": "es6-webpack2-starter",
-  "version": "2.0.2",
-  "description": "A template project for es6/7, webpack2, sass and postcss",
+  "name": "demo-d3",
+  "version": "0.0.1",
+  "description": "Example of using d3",
   "scripts": {
     "postinstall": "cp env.example.js env.js",
     "start": "webpack-dev-server --config webpack/dev.config.js --watch",
     "build": "NODE_ENV=production webpack --config webpack/prod.config.js --progress --display-error-details --color",
     "precommit": "eslint src"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/micooz/es6-webpack-starter.git"
   },
   "keywords": [
     "es6",
@@ -22,16 +18,10 @@
     "sass",
     "css module"
   ],
-  "author": "Micooz",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/micooz/es6-webpack-starter/issues"
-  },
-  "homepage": "https://github.com/micooz/es6-webpack-starter#readme",
+  "author": "mdan",
   "dependencies": {
     "babel-polyfill": "^6.23.0",
     "d3": "^4.7.4",
-    "nouislider": "^9.2.0",
     "wnumb": "^1.1.0"
   },
   "devDependencies": {
