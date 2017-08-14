@@ -1,18 +1,6 @@
 import * as styles from './App.scss';
 
 const d3 = require('d3');
-// let tempNode = null;
-// const color = d3.scaleOrdinal(d3.schemeCategory20);
-// const paramIgnoreList = ['PATID-NUMBER-disabled'];
-// TODO: Further condense paired sets of FOO and A_FOO
-// TODO: Ranked column names and checkboxes
-
-/* const intersect = function intersect(a, b) {
-  return a.filter(function (e) {
-    return b.indexOf(e) > -1;
-  });
-};
-*/
 
 export class Clusters {
   render() {
@@ -102,7 +90,7 @@ export class Clusters {
     const z = d3.scaleOrdinal()
       .range(['#980000', '#008900', '#000088', '#808000']);
     const keys = ['G', 'A', 'T', 'C'];
-
+    const fontSize = 68;
     // this.data.sort( (a, b) => b.total - a.total );
     x.domain(Object.keys(this.data));
     y.domain([0, this.data.length]).nice();
@@ -126,42 +114,16 @@ export class Clusters {
       }
       )
         .style( 'font-family', 'monospace' )
-        .style('font-size', x.bandwidth())
-      // .attr('x', (d) => x(d.data.pos) )
-      // .attr('y', (d) => y(d[1]) )
-      .attr('height', (d) => y(d[0]) - y(d[1]) )
-      .attr('width', x.bandwidth())
-      .attr('transform', function(d, i, group) {
+        .attr('x', (d) => x(d.data.pos) )
+        .attr('y', (d) => y(d[0]) - 7 )
+        .style('font-size', (d) => `${fontSize * (d[1] - d[0])}px` )
+      .attr('lengthAdjust', 'spacingAndGlyphs' )
+      .attr('textLength', x.bandwidth());
+
+      /* .attr('transform', function(d, i, group) {
         console.log(d, i, group);
-        if (d[0] !== d[1]) {
-          return `scale(1,${d[1] - d[0]}) translate(${x(d.data.pos)}, ${y(d[1]) / (d[1] - d[0])})`;
-        }
-      });
-
-      /*
-      this one!
-      .append('text').text( (d) => console.log(d) ? d.key : d.key)
-        .style( 'text-anchor', 'middle' )
-        .style( 'font-family', 'monospace' )
-        .attr('x', (d) => console.log(d) ? x(d.index) : x(d.index) )
-        .attr('y', (d) => y(d[d.index][1]) )
-      /*  .style('font-size', x.bandwidth())
-        .attr('transform', (d) => `scale(1,${d[1] - d[0]})`)
-      /*      .append('text').text( (d) => d[d.index])
-
-      /* .append('g')
-        .attr('fill', (d) => z(d.key) )
-      .selectAll('rect')
-      .data( (d) => d )
-      .enter().append('text').text( (d, i) => d.data.pairs[i][])
-        .style( 'text-anchor', 'middle' )
-        .style( 'font-family', 'monospace' )
-        .attr('x', (d) => x(d.data.index) )
-        .attr('y', (d) => y(d[1]) )
-        .style('font-size', x.bandwidth())
-        .attr('transform', (d) => `scale(1,${d[1]})`)
-        /* .attr('height', (d) => y(d[0]) - y(d[1]) )
-        .attr('width', x.bandwidth()) */
+        return `scale(1,${d[1] - d[0]})`;
+      }); */
 
     g.append('g')
         .attr('class', 'axis')
