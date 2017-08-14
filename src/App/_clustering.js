@@ -24,9 +24,8 @@ export class Clusters {
     console.log('initializing chart');
   }
 
-  update(data) {
+  update() {
     console.log('update');
-    this.data = data;
     // store originals for later;
     this.vals = ['AGATCGACCCT',
       'GGAACGACGCT',
