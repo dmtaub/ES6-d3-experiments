@@ -54,14 +54,6 @@ export class Clusters {
       }
     }.bind(this));
 
-    /* for (i = 0; i < bpCount; i++) {
-      const pairs = Object.entries(this.data[i]);
-      pairs.sort((x) => x[1]).reverse(); // sort on value
-      this.data[i].pairs = pairs.filter((x) => x[1] !== 0);
-      this.data[i] = pairs;
-      this.data[i].index = i;
-    } */
-
   }
 
   renderChart() {
@@ -88,7 +80,7 @@ export class Clusters {
       .rangeRound([height, 0]);
 
     const z = d3.scaleOrdinal()
-      .range(['#980000', '#008900', '#000088', '#808000']);
+      .range(['#808000', '#008900', '#980000', '#000088']);
     const keys = ['G', 'A', 'T', 'C'];
     const fontSize = 68;
     // this.data.sort( (a, b) => b.total - a.total );
