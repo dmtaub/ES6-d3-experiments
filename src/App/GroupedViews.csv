@@ -1,0 +1,4 @@
+listofuniquesetoffieldnamesandtypes,a-varchar:b-varchar:c-varchar,a-varchar:b-varchar,a-varchar:c-varchar
+countoftables,2,1,1
+table1,item,smitem,shmitem
+table2,britem,,
